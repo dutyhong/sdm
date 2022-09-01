@@ -64,8 +64,8 @@ class TzSdm(nn.Module):
 		target_shop_embedding = self.shop_embed_layer(target_item_shop_id)
 		target_category_embedding = self.category_embed_layer(target_item_category_id)
 		## 如果是计算相似度
-		# target_embedding = torch.add(target_shop_embedding,target_category_embedding)
+		target_embedding = torch.add(target_shop_embedding,target_category_embedding)
 		# 简化了损失函数的计算，直接余弦距离
-		# cos_out = torch.cosine_similarity(long_short_out, target_embedding)
-		# return torch.sigmoid(cos_out)
-		return long_short_out
+		cos_out = torch.cosine_similarity(long_short_out, target_embedding)
+		return torch.sigmoid(cos_out)
+		# return long_short_out
