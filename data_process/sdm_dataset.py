@@ -43,7 +43,7 @@ class SdmDataSet(torch.utils.data.Dataset):
 			self.current_window_category_ids_list.append(current_window_category_ids)
 			self.history_window_shop_ids_list.append(history_window_shop_ids)
 			self.history_window_category_ids_list.append(history_window_category_ids)
-			self.targets.append(item_id)
+			self.targets.append(item_map.get(item_id, 0))
 
 	def __len__(self):
 		return len(self.user_ids)

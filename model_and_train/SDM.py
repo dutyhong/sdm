@@ -11,7 +11,8 @@ from model_and_train.sdm_attention import SdmAttention
 from model_and_train.sampled_softmax_loss import SampledSoftmax
 
 class TzSdm(nn.Module):
-	def __init__(self, user_num, shop_num, category_num,item_num, current_window_seq_length, history_window_seq_length, embedding_dim, lstm_hidden_size,categorical_feature_num):
+	def __init__(self, user_num, shop_num, category_num,item_num, current_window_seq_length, history_window_seq_length, embedding_dim, lstm_hidden_size,categorical_feature_num,
+				 use_sampled_softmax=False):
 		super().__init__()
 		self.user_embed_layer = nn.Embedding(user_num, embedding_dim)
 		# self.target_shop_embed_layer = nn.Embedding(shop_num, embedding_dim)
@@ -30,6 +31,7 @@ class TzSdm(nn.Module):
 		self.history_dense_layer = nn.Linear(embedding_dim*categorical_feature_num, embedding_dim)
 		self.gate_dense_layer = nn.Linear(embedding_dim*3, embedding_dim)
 		self.sampled_softmax = SampledSoftmax(item_num,nhid=embedding_dim, nsampled=200,tied_weight=None)
+		self.use_sampled_softmax = use_sampled_softmax
 
 	def forward(self, input_data):
 		target_item_shop_id, target_item_category_id, current_window_shop_ids, current_window_category_ids, history_window_shop_ids, \
@@ -59,13 +61,15 @@ class TzSdm(nn.Module):
 		long_short_cat_in = torch.cat([short_out, long_out, user_embedding], dim=1)
 		long_short_cat_out = self.gate_dense_layer(long_short_cat_in) ## [B E]
 		gate_values = torch.sigmoid(long_short_cat_out)
-		negtive_gate_values = torch.ones_like(gate_values)-gate_values
-		long_short_out = gate_values*short_out+negtive_gate_values*long_out
-		target_shop_embedding = self.shop_embed_layer(target_item_shop_id)
-		target_category_embedding = self.category_embed_layer(target_item_category_id)
-		## 如果是计算相似度
-		target_embedding = torch.add(target_shop_embedding,target_category_embedding)
-		# 简化了损失函数的计算，直接余弦距离
-		cos_out = torch.cosine_similarity(long_short_out, target_embedding)
-		return torch.sigmoid(cos_out)
-		# return long_short_out
+		negative_gate_values = torch.ones_like(gate_values)-gate_values
+		long_short_out = gate_values*short_out+negative_gate_values*long_out
+		if not self.use_sampled_softmax:
+			target_shop_embedding = self.shop_embed_layer(target_item_shop_id)
+			target_category_embedding = self.category_embed_layer(target_item_category_id)
+			## 如果是计算相似度
+			target_embedding = torch.add(target_shop_embedding,target_category_embedding)
+			# 简化了损失函数的计算，直接余弦距离
+			cos_out = torch.cosine_similarity(long_short_out, target_embedding)
+			return torch.sigmoid(cos_out)
+		else:
+			return long_short_out

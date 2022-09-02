@@ -10,6 +10,7 @@ from torch.nn import CrossEntropyLoss
 
 
 # https://zhuanlan.zhihu.com/p/528862933 参考； 相当于在模型输出后又加了一个全连接，该全连接用于sampled softmax的采样计算，同是也在模型训练时共同训练权重
+# https://zhuanlan.zhihu.com/p/489022692
 # 如何使用 参考https://github.com/dutyhong/Sampled-Softmax-PyTorch/blob/9545b61f425e3ad3790deb6a3d7b9d9d0a601fa5/main.py#train和evaluate
 # 主要分为三步：1. 通过采样器得到采样的负样本id。负样本和正样本的概率值； 2. 得到用户对所有负样本和正样本的评分，就是inputs和sample logits以及true logits的点积；3. 将所有评分减去负样本和正样本的log概率值
 class LogUniformSampler(object):
